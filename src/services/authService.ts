@@ -1,5 +1,4 @@
 import { supabase } from './supabaseClient';
-import axios from 'axios';
 
 /**
  * Auth Service - Handles authentication flows including OTP, password reset, email verification
@@ -25,7 +24,7 @@ export const generateAndSendOTP = async (
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
     // Store OTP in database
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('otp_tokens')
       .insert([
         {
@@ -53,7 +52,7 @@ export const generateAndSendOTP = async (
         : `Your email verification code is: ${otpCode}\n\nThis code expires in 10 minutes.\n\nDon't share this code with anyone.`;
 
     // Send via custom email function (you can use SendGrid, Resend, or custom backend)
-    await sendEmailOTP(email, emailSubject, emailBody, otpCode);
+    await sendEmailOTP(email, emailBody, otpCode);
 
     return {
       success: true,
@@ -241,7 +240,7 @@ export const sendEmailVerificationLink = async (
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Store verification token
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('email_verification_tokens')
       .insert([
         {
@@ -262,8 +261,7 @@ export const sendEmailVerificationLink = async (
     // Send email
     await sendEmailVerification(
       email,
-      verificationLink,
-      'Verify Your Email Address'
+      verificationLink
     );
 
     return {
@@ -402,14 +400,13 @@ export const resendVerificationEmail = async (email: string) => {
  */
 const sendEmailOTP = async (
   email: string,
-  subject: string,
   body: string,
   otp: string
 ) => {
   try {
     // Option 1: Using Supabase Edge Functions (requires setup)
     // const response = await supabase.functions.invoke('send-email', {
-    //   body: { email, subject, body, otp },
+    //   body: { email, body, otp },
     // });
 
     // Option 2: Using a backend API endpoint (create your own)
@@ -417,7 +414,6 @@ const sendEmailOTP = async (
     // if (baseUrl) {
     //   await axios.post(`${baseUrl}/api/email/send-otp`, {
     //     email,
-    //     subject,
     //     body,
     //     otp,
     //   });
@@ -439,8 +435,7 @@ const sendEmailOTP = async (
  */
 const sendEmailVerification = async (
   email: string,
-  verificationLink: string,
-  subject: string
+  verificationLink: string
 ) => {
   try {
     const body = `
