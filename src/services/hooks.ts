@@ -17,20 +17,36 @@ export const useAuth = () => {
 
   useEffect(() => {
     const getUser = async () => {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-      
-      if (currentUser) {
-        // Check email verification status
-        const isVerified = await isEmailVerified(currentUser.id);
-        setEmailVerified(isVerified);
+      try {
+        const currentUser = await getCurrentUser();
+        setUser(currentUser);
+        
+        if (currentUser) {
+          // Check email verification status (handle 404 gracefully)
+          try {
+            const isVerified = await isEmailVerified(currentUser.id);
+            setEmailVerified(isVerified);
+          } catch (verifyError: any) {
+            console.warn('Could not verify email status (expected if schema not executed yet):', verifyError);
+            setEmailVerified(false);
+          }
 
-        // Check profile completion
-        const profileStatus = await isProfileComplete(currentUser.id);
-        setProfileComplete(profileStatus.complete);
+          // Check profile completion (handle 404 gracefully)
+          try {
+            const profileStatus = await isProfileComplete(currentUser.id);
+            setProfileComplete(profileStatus.complete);
+          } catch (profileError: any) {
+            console.warn('Could not check profile status (expected if schema not executed yet):', profileError);
+            setProfileComplete(false);
+          }
+        }
+
+        setLoading(false);
+      } catch (err: any) {
+        console.error('Auth initialization error:', err);
+        setLoading(false);
+        setError(err);
       }
-
-      setLoading(false);
     };
 
     getUser();
@@ -39,7 +55,12 @@ export const useAuth = () => {
       (event, session) => {
         setUser(session?.user || null);
         if (session?.user) {
-          isEmailVerified(session.user.id).then(setEmailVerified);
+          isEmailVerified(session.user.id)
+            .then(setEmailVerified)
+            .catch((err: any) => {
+              console.warn('Could not verify email status:', err);
+              setEmailVerified(false);
+            });
         }
       }
     );

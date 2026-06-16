@@ -141,6 +141,15 @@ export const startForgotPasswordFlow = async (email: string) => {
       .eq('email', email)
       .single();
 
+    // Handle 404 - table doesn't exist
+    if (userError?.code === '404' || userError?.message?.includes('not found')) {
+      return {
+        success: false,
+        message: 'Database not yet initialized. Please execute SUPABASE_SCHEMA.sql in Supabase dashboard first.',
+        error: userError,
+      };
+    }
+
     if (userError || !userData) {
       return {
         success: false,
@@ -503,10 +512,31 @@ export const signUpWithProfile = async (
         },
       ]);
 
+    // Handle missing table error
+    if (profileError?.code === '404' || profileError?.message?.includes('not found')) {
+      console.error('❌ user_profiles table not found');
+      console.log('📌 SOLUTION: Execute SUPABASE_SCHEMA.sql in Supabase SQL Editor');
+      console.log('📌 Guide: See EXECUTE_SCHEMA_GUIDE.md');
+      
+      // Still return partial success - user was created in auth
+      return {
+        success: false,
+        message: 'Auth account created but profile table not yet initialized. Execute SUPABASE_SCHEMA.sql in Supabase dashboard first.',
+        userId: authData.user.id,
+        requiresSchemaSetup: true,
+        error: profileError,
+      };
+    }
+
     if (profileError) throw profileError;
 
     // Send verification email
-    await sendEmailVerificationLink(email, authData.user.id);
+    try {
+      await sendEmailVerificationLink(email, authData.user.id);
+    } catch (emailError) {
+      console.warn('Warning: Could not send verification email (expected on free tier)', emailError);
+      // Don't fail signup if email sending fails
+    }
 
     return {
       success: true,
@@ -516,6 +546,20 @@ export const signUpWithProfile = async (
       error: null,
     };
   } catch (error: any) {
+    // Handle table not found at auth creation stage
+    if (error?.code === 'PGRST116' || error?.message?.includes('404')) {
+      console.error('❌ Database tables not found');
+      console.log('📌 SOLUTION: Execute SUPABASE_SCHEMA.sql in Supabase SQL Editor');
+      console.log('📌 Guide: See EXECUTE_SCHEMA_GUIDE.md');
+      
+      return {
+        success: false,
+        message: 'Database not initialized. Execute SUPABASE_SCHEMA.sql in Supabase dashboard first.',
+        requiresSchemaSetup: true,
+        error,
+      };
+    }
+    
     console.error('Signup error:', error);
     return {
       success: false,
@@ -535,15 +579,30 @@ export const signUpWithProfile = async (
  */
 export const isEmailVerified = async (userId: string) => {
   try {
+    if (!userId) {
+      console.log('No userId provided - user not authenticated');
+      return false;
+    }
+
     const { data, error } = await supabase
       .from('user_profiles')
       .select('email_verified')
       .eq('id', userId)
       .single();
 
+    // Handle 404 - table doesn't exist or record not found
+    if (error?.code === '404' || error?.message?.includes('not found')) {
+      console.log('ℹ️ user_profiles table not yet created. Execute SUPABASE_SCHEMA.sql first.');
+      return false;
+    }
+
     if (error) throw error;
     return data?.email_verified || false;
   } catch (error: any) {
+    // Silently fail if tables don't exist yet - this is expected before schema execution
+    if (error?.message?.includes('404') || error?.code === '404') {
+      return false;
+    }
     console.error('Check email verification error:', error);
     return false;
   }
@@ -555,11 +614,22 @@ export const isEmailVerified = async (userId: string) => {
  */
 export const isProfileComplete = async (userId: string) => {
   try {
+    if (!userId) {
+      console.log('No userId provided - user not authenticated');
+      return { complete: false, hasPhone: false, hasFullName: false };
+    }
+
     const { data, error } = await supabase
       .from('user_profiles')
       .select('profile_complete, phone_number, full_name')
       .eq('id', userId)
       .single();
+
+    // Handle 404 - table doesn't exist or record not found
+    if (error?.code === '404' || error?.message?.includes('not found')) {
+      console.log('ℹ️ user_profiles table not yet created. Execute SUPABASE_SCHEMA.sql first.');
+      return { complete: false, hasPhone: false, hasFullName: false };
+    }
 
     if (error) throw error;
     return {
@@ -568,6 +638,10 @@ export const isProfileComplete = async (userId: string) => {
       hasFullName: !!data?.full_name,
     };
   } catch (error: any) {
+    // Silently fail if tables don't exist yet - this is expected before schema execution
+    if (error?.message?.includes('404') || error?.code === '404') {
+      return { complete: false, hasPhone: false, hasFullName: false };
+    }
     console.error('Check profile completion error:', error);
     return { complete: false, hasPhone: false, hasFullName: false };
   }

@@ -73,7 +73,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       const result = await signUp(email, password, phoneNumber, fullName);
 
       if (!result.success) {
-        setError(result.message || 'Sign up failed');
+        // Check if this is a schema setup error
+        if (result.requiresSchemaSetup) {
+          setError(
+            '⚠️ Database not initialized.\n\n' +
+            'Steps to fix:\n' +
+            '1. Go to Supabase Dashboard\n' +
+            '2. Click SQL Editor → New Query\n' +
+            '3. Copy entire SUPABASE_SCHEMA.sql\n' +
+            '4. Click Run\n\n' +
+            'See EXECUTE_SCHEMA_GUIDE.md for details'
+          );
+        } else {
+          setError(result.message || 'Sign up failed');
+        }
         setLoading(false);
         return;
       }
@@ -126,7 +139,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: '#ef4444' }}
             >
               <AlertCircle size={18} style={{ color: '#ef4444' }} className="flex-shrink-0 mt-0.5" />
-              <p className="text-sm" style={{ color: '#fca5a5' }}>
+              <p className="text-sm whitespace-pre-wrap" style={{ color: '#fca5a5' }}>
                 {error}
               </p>
             </div>
