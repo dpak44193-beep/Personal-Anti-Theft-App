@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Shield,
   AlertTriangle,
@@ -9,6 +9,7 @@ import {
   Clock,
   TrendingUp,
   ChevronRight,
+  Loader,
 } from "lucide-react";
 import {
   AreaChart,
@@ -18,7 +19,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { supabase } from "../../services/supabaseClient";
+import { useAuth } from "../../services/hooks";
 
+// Hardcoded activity data (would come from backend in production)
 const activityData = [
   { time: "00:00", events: 2, alerts: 0 },
   { time: "03:00", events: 1, alerts: 0 },
@@ -31,12 +35,13 @@ const activityData = [
   { time: "Now", events: 6, alerts: 0 },
 ];
 
-const recentAlerts = [
-  { id: 1, type: "warning", msg: "Unusual location detected — 4.2km from home zone", time: "14 min ago" },
-  { id: 2, type: "info", msg: "Device connected to new Wi-Fi: 'CafeNet-5G'", time: "1h 22min ago" },
-  { id: 3, type: "danger", msg: "Failed unlock attempt — 3 consecutive failures", time: "3h 07min ago" },
-  { id: 4, type: "info", msg: "Battery below 20% — power saving mode enabled", time: "5h 43min ago" },
-  { id: 5, type: "warning", msg: "SIM card removed momentarily — re-inserted", time: "Yesterday 22:18" },
+// Default alerts (will be replaced with real data)
+const defaultAlerts = [
+  { id: 1, type: "warning" as const, msg: "Unusual location detected — 4.2km from home zone", time: "14 min ago" },
+  { id: 2, type: "info" as const, msg: "Device connected to new Wi-Fi: 'CafeNet-5G'", time: "1h 22min ago" },
+  { id: 3, type: "danger" as const, msg: "Failed unlock attempt — 3 consecutive failures", time: "3h 07min ago" },
+  { id: 4, type: "info" as const, msg: "Battery below 20% — power saving mode enabled", time: "5h 43min ago" },
+  { id: 5, type: "warning" as const, msg: "SIM card removed momentarily — re-inserted", time: "Yesterday 22:18" },
 ];
 
 const statCards = [
@@ -82,12 +87,6 @@ const statCards = [
   },
 ];
 
-const devices = [
-  { name: "Pixel 8 Pro", owner: "James", status: "secured", battery: 87, signal: "5G" },
-  { name: "Samsung S24", owner: "Sarah", status: "secured", battery: 62, signal: "LTE" },
-  { name: "iPhone 15", owner: "Michael", status: "warning", battery: 18, signal: "Wi-Fi" },
-];
-
 function GlassCard({ children, className = "", style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
     <div
@@ -122,7 +121,63 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function Dashboard() {
   const [alertFilter, setAlertFilter] = useState<"all" | "danger" | "warning">("all");
+  const [devices, setDevices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
+  // Fetch user's devices from Supabase
+  useEffect(() => {
+    const fetchUserDevices = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch user devices from Supabase
+        const { data, error: fetchError } = await supabase
+          .from("user_devices")
+          .select("*")
+          .eq("owner_id", user.id)
+          .limit(10);
+
+        if (fetchError) {
+          console.error("Error fetching devices:", fetchError);
+          setError("Could not load devices");
+          setDevices([]);
+        } else if (data && data.length > 0) {
+          // Format real devices
+          const formattedDevices = data.map((d: any) => ({
+            name: d.device_name || "Unknown Device",
+            owner: user.email?.split("@")[0] || "User",
+            status: d.is_lost ? "warning" : "secured",
+            battery: d.battery_level || 85,
+            signal: d.os_type === "iOS" ? "5G" : d.os_type === "Android" ? "LTE" : "Wi-Fi",
+          }));
+          setDevices(formattedDevices);
+          setError(null);
+        } else {
+          // No devices yet - show empty state
+          setDevices([]);
+          setError(null);
+        }
+      } catch (err: any) {
+        console.error("Fetch devices error:", err);
+        setError("Failed to load devices");
+        setDevices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserDevices();
+  }, [user?.id]);
+
+  const recentAlerts = defaultAlerts;
   const filtered = recentAlerts.filter((a) => alertFilter === "all" || a.type === alertFilter);
 
   return (
@@ -216,39 +271,56 @@ export function Dashboard() {
           </ResponsiveContainer>
         </GlassCard>
 
-        {/* Devices */}
+        {/* Devices - Now fetches real user data */}
         <GlassCard className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <div style={{ fontSize: "clamp(12px, 2vw, 13px)", fontWeight: 600, color: "#E2E8F0" }}>Connected Devices</div>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(9px, 1.5vw, 10px)", color: "#39FF14", background: "#39FF1415", padding: "2px 8px", borderRadius: 4, border: "1px solid #39FF1430" }}>
-              {devices.length} ACTIVE
-            </span>
+            {devices.length > 0 && (
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(9px, 1.5vw, 10px)", color: "#39FF14", background: "#39FF1415", padding: "2px 8px", borderRadius: 4, border: "1px solid #39FF1430" }}>
+                {devices.length} ACTIVE
+              </span>
+            )}
           </div>
-          <div className="space-y-2 md:space-y-3">
-            {devices.map((d) => (
-              <div key={d.name} className="flex items-center gap-2 md:gap-3 p-2 md:p-2.5 rounded-lg" style={{ background: "#0F1A2E" }}>
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: d.status === "warning" ? "#FF9F0020" : "#00D4FF15", border: `1px solid ${d.status === "warning" ? "#FF9F0040" : "#00D4FF30"}` }}
-                >
-                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 700, color: d.status === "warning" ? "#FF9F00" : "#00D4FF" }}>
-                    {d.owner[0]}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div style={{ fontSize: "clamp(11px, 2vw, 12px)", fontWeight: 600, color: "#CBD5E1" }}>{d.name}</div>
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(9px, 1.5vw, 10px)", color: "#64748B" }}>{d.owner} · {d.signal}</div>
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <div className="flex items-center gap-1">
-                    <Battery size={10} style={{ color: d.battery < 25 ? "#FF3355" : "#64748B" }} />
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(9px, 1.5vw, 10px)", color: d.battery < 25 ? "#FF3355" : "#64748B" }}>{d.battery}%</span>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader size={20} className="animate-spin" style={{ color: "#00D4FF" }} />
+            </div>
+          ) : error ? (
+            <div style={{ color: "#FF9F00", fontSize: "clamp(10px, 1.5vw, 11px)", textAlign: "center", py: 4 }}>
+              ⚠️ {error}
+            </div>
+          ) : devices.length === 0 ? (
+            <div style={{ color: "#64748B", fontSize: "clamp(10px, 1.5vw, 11px)", textAlign: "center", py: 4 }}>
+              📱 No devices registered yet
+            </div>
+          ) : (
+            <div className="space-y-2 md:space-y-3">
+              {devices.map((d, i) => (
+                <div key={i} className="flex items-center gap-2 md:gap-3 p-2 md:p-2.5 rounded-lg" style={{ background: "#0F1A2E" }}>
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: d.status === "warning" ? "#FF9F0020" : "#00D4FF15", border: `1px solid ${d.status === "warning" ? "#FF9F0040" : "#00D4FF30"}` }}
+                  >
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 700, color: d.status === "warning" ? "#FF9F00" : "#00D4FF" }}>
+                      {d.owner[0]?.toUpperCase()}
+                    </span>
                   </div>
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: d.status === "warning" ? "#FF9F00" : "#39FF14", boxShadow: `0 0 4px ${d.status === "warning" ? "#FF9F00" : "#39FF14"}` }} />
+                  <div className="flex-1 min-w-0">
+                    <div style={{ fontSize: "clamp(11px, 2vw, 12px)", fontWeight: 600, color: "#CBD5E1" }}>{d.name}</div>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(9px, 1.5vw, 10px)", color: "#64748B" }}>{d.owner} · {d.signal}</div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <div className="flex items-center gap-1">
+                      <Battery size={10} style={{ color: d.battery < 25 ? "#FF3355" : "#64748B" }} />
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(9px, 1.5vw, 10px)", color: d.battery < 25 ? "#FF3355" : "#64748B" }}>{d.battery}%</span>
+                    </div>
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: d.status === "warning" ? "#FF9F00" : "#39FF14", boxShadow: `0 0 4px ${d.status === "warning" ? "#FF9F00" : "#39FF14"}` }} />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </GlassCard>
       </div>
 
