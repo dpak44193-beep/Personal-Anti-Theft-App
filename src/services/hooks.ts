@@ -18,38 +18,32 @@ export const useAuth = () => {
   useEffect(() => {
     const getUser = async () => {
       try {
-        console.log('🔄 Loading auth user...');
         const currentUser = await getCurrentUser();
         setUser(currentUser);
         
-        if (currentUser?.id) {
-          console.log('✅ User loaded:', currentUser.email);
-          // Check email verification status (handle gracefully if table doesn't exist)
+        if (currentUser) {
+          // Check email verification status (handle 404 gracefully)
           try {
             const isVerified = await isEmailVerified(currentUser.id);
             setEmailVerified(isVerified);
           } catch (verifyError: any) {
-            console.warn('⚠️ Could not verify email status:', verifyError?.message);
+            console.warn('Could not verify email status (expected if schema not executed yet):', verifyError);
             setEmailVerified(false);
           }
 
-          // Check profile completion
+          // Check profile completion (handle 404 gracefully)
           try {
             const profileStatus = await isProfileComplete(currentUser.id);
             setProfileComplete(profileStatus.complete);
           } catch (profileError: any) {
-            console.warn('⚠️ Could not check profile status:', profileError?.message);
+            console.warn('Could not check profile status (expected if schema not executed yet):', profileError);
             setProfileComplete(false);
           }
-        } else {
-          console.log('ℹ️ No user authenticated');
-          setEmailVerified(false);
-          setProfileComplete(false);
         }
 
         setLoading(false);
       } catch (err: any) {
-        console.error('❌ Auth initialization error:', err?.message);
+        console.error('Auth initialization error:', err);
         setLoading(false);
         setError(err);
       }
@@ -59,18 +53,14 @@ export const useAuth = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('🔄 Auth state changed:', event);
         setUser(session?.user || null);
-        
-        if (session?.user?.id) {
+        if (session?.user) {
           isEmailVerified(session.user.id)
             .then(setEmailVerified)
             .catch((err: any) => {
-              console.warn('⚠️ Could not verify email:', err?.message);
+              console.warn('Could not verify email status:', err);
               setEmailVerified(false);
             });
-        } else {
-          setEmailVerified(false);
         }
       }
     );

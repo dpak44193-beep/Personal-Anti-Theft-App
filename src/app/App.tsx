@@ -11,7 +11,6 @@ import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth, usePermissions } from "../services";
 import { LoginPage } from "./components/auth/LoginPage";
 import { ForgotPasswordPage } from "./components/auth/ForgotPasswordPage";
-import { EmailVerificationPage } from "./components/auth/EmailVerificationPage";
 import { PermissionsScreen } from "./components/auth/PermissionsScreen";
 
 type Screen =
@@ -24,21 +23,21 @@ type Screen =
   | "sos"
   | "settings";
 
-type AuthScreen = "login" | "forgot-password" | "email-verification" | "permissions";
+type AuthScreen = "login" | "forgot-password" | "permissions";
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("dashboard");
   const [authScreen, setAuthScreen] = useState<AuthScreen>("login");
-  const { user, loading: authLoading, emailVerified, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [permissionsGranted, setPermissionsGranted] = useState(false);
   const { permissions, grantDevicePermissions } = usePermissions(user?.id, "web");
 
   // Check permissions on mount
   useEffect(() => {
-    if (user && emailVerified && permissions?.location_access) {
+    if (user && permissions?.location_access) {
       setPermissionsGranted(true);
     }
-  }, [user, emailVerified, permissions]);
+  }, [user, permissions]);
 
   const screenMap: Record<Screen, React.ReactNode> = {
     dashboard: <Dashboard />,
@@ -54,7 +53,7 @@ export default function App() {
   const needsFullHeight = screen === "tracking" || screen === "evidence";
 
   // ============================================================
-  // AUTH FLOW GUARDS
+  // SIMPLIFIED AUTH FLOW: Login → Permissions → Dashboard
   // ============================================================
 
   // 1. Not logged in → Show Login Page
@@ -64,8 +63,8 @@ export default function App() {
         {authScreen === "login" && (
           <LoginPage
             onLoginSuccess={() => {
-              // Will refetch user due to useAuth subscription
-              setAuthScreen("email-verification");
+              // Go directly to permissions (no email verification)
+              setAuthScreen("permissions");
             }}
             onForgotPasswordClick={() => setAuthScreen("forgot-password")}
           />
@@ -81,20 +80,8 @@ export default function App() {
     );
   }
 
-  // 2. Logged in but email not verified → Show Email Verification
-  if (user && !emailVerified && !authLoading) {
-    return (
-      <EmailVerificationPage
-        email={user.email || ""}
-        onVerificationComplete={() => {
-          setAuthScreen("permissions");
-        }}
-      />
-    );
-  }
-
-  // 3. Logged in and email verified but no permissions → Show Permissions Screen
-  if (user && emailVerified && !permissionsGranted && !authLoading) {
+  // 2. Logged in but no permissions → Show Permissions Screen
+  if (user && !permissionsGranted && !authLoading) {
     return (
       <PermissionsScreen
         onPermissionsGranted={() => {
@@ -110,7 +97,7 @@ export default function App() {
     );
   }
 
-  // 4. All checks passed → Show Dashboard
+  // 3. All checks passed → Show Dashboard
   if (!authLoading) {
     return (
       <div

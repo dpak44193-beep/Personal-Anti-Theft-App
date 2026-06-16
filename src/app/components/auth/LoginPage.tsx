@@ -94,7 +94,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       // Success - show message and guide to email verification
       setError('');
       alert(
-        'Account created successfully! Please check your email to verify your account before logging in.'
+        'Account created successfully! You can now log in.'
       );
 
       // Clear form and switch back to login
