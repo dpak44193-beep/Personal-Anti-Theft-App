@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Menu, X } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
 import { Dashboard } from "./components/Dashboard";
 import { LiveTracking } from "./components/LiveTracking";
@@ -31,6 +32,7 @@ export default function App() {
   const { user, loading: authLoading, signOut } = useAuth();
   const [permissionsGranted, setPermissionsGranted] = useState(false);
   const { permissions, grantDevicePermissions } = usePermissions(user?.id, "web");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Check permissions on mount
   useEffect(() => {
@@ -38,6 +40,11 @@ export default function App() {
       setPermissionsGranted(true);
     }
   }, [user, permissions]);
+
+  // Close sidebar when screen changes on mobile
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [screen]);
 
   const screenMap: Record<Screen, React.ReactNode> = {
     dashboard: <Dashboard />,
@@ -101,18 +108,55 @@ export default function App() {
   if (!authLoading) {
     return (
       <div
-        className="dark flex w-full h-screen overflow-hidden"
+        className="dark flex flex-col md:flex-row w-full h-screen overflow-hidden"
         style={{ background: "#070B14", fontFamily: "'Inter', sans-serif" }}
       >
-        <Sidebar active={screen} onNavigate={setScreen} />
+        {/* Mobile Header */}
+        <div
+          className="md:hidden flex items-center justify-between px-4 py-3 border-b"
+          style={{ borderColor: "rgba(0,212,255,0.1)" }}
+        >
+          <div style={{ color: "#39FF14", fontWeight: "bold", fontSize: "18px" }}>SecureTrace</div>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 hover:bg-gray-900 rounded-lg transition-colors"
+          >
+            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
+        {/* Sidebar - Hidden on mobile, visible on md+ */}
+        <div
+          className={`${
+            sidebarOpen ? "fixed inset-0 z-40 md:z-0 md:static" : "hidden md:flex"
+          } flex-col h-full w-60 shrink-0 md:relative`}
+          style={{
+            background: sidebarOpen ? "#070B14CC" : undefined,
+          }}
+        >
+          {sidebarOpen && (
+            <div
+              className="md:hidden absolute inset-0"
+              onClick={() => setSidebarOpen(false)}
+              style={{ background: "rgba(0,0,0,0.5)", zIndex: -1 }}
+            />
+          )}
+          <div className="md:hidden"></div>
+          <Sidebar active={screen} onNavigate={setScreen} />
+        </div>
+
+        {/* Main Content */}
         <main
-          className="flex-1 overflow-hidden"
+          className="flex-1 overflow-hidden flex flex-col md:flex-row"
           style={{ background: "#070B14" }}
         >
           {needsFullHeight ? (
-            <div className="h-full overflow-hidden">{screenMap[screen]}</div>
+            <div className="w-full h-full overflow-hidden">{screenMap[screen]}</div>
           ) : (
-            <div className="h-full overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+            <div
+              className="w-full h-full overflow-y-auto"
+              style={{ scrollbarWidth: "none" }}
+            >
               {screenMap[screen]}
             </div>
           )}
@@ -122,7 +166,8 @@ export default function App() {
         <div
           className="pointer-events-none fixed inset-0 z-50"
           style={{
-            backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.012) 2px, rgba(0,212,255,0.012) 4px)",
+            backgroundImage:
+              "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.012) 2px, rgba(0,212,255,0.012) 4px)",
             backgroundSize: "100% 4px",
           }}
         />

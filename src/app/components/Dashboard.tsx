@@ -126,33 +126,35 @@ export function Dashboard() {
   const filtered = recentAlerts.filter((a) => alertFilter === "all" || a.type === alertFilter);
 
   return (
-    <div className="p-6 space-y-5" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="p-4 md:p-6 space-y-5 w-full max-w-7xl mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#E2E8F0", letterSpacing: "-0.01em" }}>
+          <h1 style={{ fontSize: "clamp(18px, 5vw, 20px)", fontWeight: 700, color: "#E2E8F0", letterSpacing: "-0.01em" }}>
             Security Dashboard
           </h1>
-          <div className="flex items-center gap-2 mt-1">
-            <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#39FF14", boxShadow: "0 0 6px #39FF14" }} />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#39FF14" }}>
-              ALL SYSTEMS OPERATIONAL
-            </span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#64748B" }}>
+          <div className="flex flex-col md:flex-row md:items-center gap-2 mt-1">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#39FF14", boxShadow: "0 0 6px #39FF14" }} />
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(10px, 2vw, 11px)", color: "#39FF14" }}>
+                ALL SYSTEMS OPERATIONAL
+              </span>
+            </div>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(10px, 2vw, 11px)", color: "#64748B" }}>
               — Updated {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "#0F1A2E", border: "1px solid rgba(0,212,255,0.2)" }}>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg w-fit" style={{ background: "#0F1A2E", border: "1px solid rgba(0,212,255,0.2)" }}>
           <Clock size={13} style={{ color: "#00D4FF" }} />
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#94A3B8" }}>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(10px, 2vw, 11px)", color: "#94A3B8" }}>
             {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
           </span>
         </div>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {/* Stat Cards - Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
@@ -167,27 +169,28 @@ export function Dashboard() {
                 <TrendingUp size={13} style={{ color: card.positive ? "#39FF14" : "#FF9F00" }} />
               </div>
               <div className="flex items-end gap-1 mb-1">
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 26, fontWeight: 700, color: card.color, lineHeight: 1 }}>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 700, color: card.color, lineHeight: 1 }}>
                   {card.value}
                 </span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "#64748B", marginBottom: 2 }}>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(10px, 2vw, 12px)", color: "#64748B", marginBottom: 2 }}>
                   {card.unit}
                 </span>
               </div>
-              <div style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>{card.label}</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#64748B", marginTop: 4 }}>{card.delta}</div>
+              <div style={{ fontSize: "clamp(11px, 2vw, 12px)", color: "#94A3B8", fontWeight: 500 }}>{card.label}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(9px, 1.5vw, 10px)", color: "#64748B", marginTop: 4 }}>{card.delta}</div>
             </GlassCard>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+      {/* Charts Section - Stack on mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 md:gap-4">
         {/* Activity Chart */}
         <GlassCard className="lg:col-span-3">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#E2E8F0" }}>Activity Timeline</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#64748B", marginTop: 2 }}>
+              <div style={{ fontSize: "clamp(12px, 2vw, 13px)", fontWeight: 600, color: "#E2E8F0" }}>Activity Timeline</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(9px, 1.5vw, 10px)", color: "#64748B", marginTop: 2 }}>
                 Events & alerts — last 24h
               </div>
             </div>
@@ -204,8 +207,8 @@ export function Dashboard() {
                   <stop offset="95%" stopColor="#FF3355" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="time" tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fill: "#64748B" }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fill: "#64748B" }} tickLine={false} axisLine={false} />
+              <XAxis dataKey="time" tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, fill: "#64748B" }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, fill: "#64748B" }} tickLine={false} axisLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="events" name="Events" stroke="#00D4FF" strokeWidth={1.5} fill="url(#colorEvents)" />
               <Area type="monotone" dataKey="alerts" name="Alerts" stroke="#FF3355" strokeWidth={1.5} fill="url(#colorAlerts)" />
@@ -216,14 +219,14 @@ export function Dashboard() {
         {/* Devices */}
         <GlassCard className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#E2E8F0" }}>Connected Devices</div>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#39FF14", background: "#39FF1415", padding: "2px 8px", borderRadius: 4, border: "1px solid #39FF1430" }}>
+            <div style={{ fontSize: "clamp(12px, 2vw, 13px)", fontWeight: 600, color: "#E2E8F0" }}>Connected Devices</div>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(9px, 1.5vw, 10px)", color: "#39FF14", background: "#39FF1415", padding: "2px 8px", borderRadius: 4, border: "1px solid #39FF1430" }}>
               {devices.length} ACTIVE
             </span>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2 md:space-y-3">
             {devices.map((d) => (
-              <div key={d.name} className="flex items-center gap-3 p-2.5 rounded-lg" style={{ background: "#0F1A2E" }}>
+              <div key={d.name} className="flex items-center gap-2 md:gap-3 p-2 md:p-2.5 rounded-lg" style={{ background: "#0F1A2E" }}>
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: d.status === "warning" ? "#FF9F0020" : "#00D4FF15", border: `1px solid ${d.status === "warning" ? "#FF9F0040" : "#00D4FF30"}` }}
@@ -233,13 +236,13 @@ export function Dashboard() {
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#CBD5E1" }}>{d.name}</div>
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#64748B" }}>{d.owner} · {d.signal}</div>
+                  <div style={{ fontSize: "clamp(11px, 2vw, 12px)", fontWeight: 600, color: "#CBD5E1" }}>{d.name}</div>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(9px, 1.5vw, 10px)", color: "#64748B" }}>{d.owner} · {d.signal}</div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-col items-end gap-1 shrink-0">
                   <div className="flex items-center gap-1">
                     <Battery size={10} style={{ color: d.battery < 25 ? "#FF3355" : "#64748B" }} />
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: d.battery < 25 ? "#FF3355" : "#64748B" }}>{d.battery}%</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(9px, 1.5vw, 10px)", color: d.battery < 25 ? "#FF3355" : "#64748B" }}>{d.battery}%</span>
                   </div>
                   <div className="w-1.5 h-1.5 rounded-full" style={{ background: d.status === "warning" ? "#FF9F00" : "#39FF14", boxShadow: `0 0 4px ${d.status === "warning" ? "#FF9F00" : "#39FF14"}` }} />
                 </div>
@@ -251,17 +254,17 @@ export function Dashboard() {
 
       {/* Recent Alerts */}
       <GlassCard>
-        <div className="flex items-center justify-between mb-4">
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#E2E8F0" }}>Recent Security Alerts</div>
-          <div className="flex gap-1">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4 mb-4">
+          <div style={{ fontSize: "clamp(12px, 2vw, 13px)", fontWeight: 600, color: "#E2E8F0" }}>Recent Security Alerts</div>
+          <div className="flex gap-1 overflow-x-auto">
             {(["all", "danger", "warning"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setAlertFilter(f)}
-                className="px-2.5 py-1 rounded text-xs transition-colors"
+                className="px-2.5 py-1 rounded text-xs transition-colors whitespace-nowrap"
                 style={{
                   fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 10,
+                  fontSize: "clamp(9px, 1.5vw, 10px)",
                   fontWeight: 500,
                   background: alertFilter === f ? (f === "danger" ? "#FF335520" : f === "warning" ? "#FF9F0020" : "#00D4FF15") : "transparent",
                   color: alertFilter === f ? (f === "danger" ? "#FF3355" : f === "warning" ? "#FF9F00" : "#00D4FF") : "#64748B",
@@ -278,19 +281,23 @@ export function Dashboard() {
           {filtered.map((alert) => (
             <div
               key={alert.id}
-              className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:opacity-80"
+              className="flex items-start md:items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg cursor-pointer transition-colors hover:opacity-80"
               style={{ background: "#0F1A2E", border: "1px solid rgba(0,212,255,0.08)" }}
             >
               <div
-                className="w-1.5 h-1.5 rounded-full shrink-0"
+                className="w-1.5 h-1.5 rounded-full shrink-0 mt-1 md:mt-0"
                 style={{
                   background: alert.type === "danger" ? "#FF3355" : alert.type === "warning" ? "#FF9F00" : "#00D4FF",
                   boxShadow: `0 0 6px ${alert.type === "danger" ? "#FF3355" : alert.type === "warning" ? "#FF9F00" : "#00D4FF"}`,
                 }}
               />
-              <span style={{ fontSize: 12, color: "#CBD5E1", flex: 1 }}>{alert.msg}</span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#64748B", whiteSpace: "nowrap" }}>{alert.time}</span>
-              <ChevronRight size={12} style={{ color: "#64748B" }} />
+              <div className="flex-1 min-w-0">
+                <span style={{ fontSize: "clamp(11px, 2vw, 12px)", color: "#CBD5E1", display: "block", wordBreak: "break-word" }}>{alert.msg}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(9px, 1.5vw, 10px)", color: "#64748B", whiteSpace: "nowrap" }}>{alert.time}</span>
+                <ChevronRight size={12} style={{ color: "#64748B" }} className="hidden md:block" />
+              </div>
             </div>
           ))}
         </div>

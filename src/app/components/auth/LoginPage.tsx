@@ -114,20 +114,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
   return (
     <div
-      className="flex items-center justify-center min-h-screen px-4"
+      className="flex flex-col md:flex-row items-center justify-center min-h-screen px-4 py-8"
       style={{ background: '#070B14' }}
     >
       <div className="w-full max-w-md">
-        <div className="rounded-lg border border-gray-700 p-8 space-y-6">
+        <div className="rounded-lg border border-gray-700 p-6 md:p-8 space-y-6">
           {/* Header */}
           <div className="text-center">
             <h1
-              className="text-4xl font-bold mb-2"
+              className="text-3xl md:text-4xl font-bold mb-2"
               style={{ color: '#39FF14', textShadow: '0 0 20px rgba(57,255,20,0.3)' }}
             >
               Anti-Theft
             </h1>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-400 text-sm md:text-base">
               {isSignUp ? 'Create your secure account' : 'Sign in to your account'}
             </p>
           </div>
@@ -135,23 +135,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           {/* Error Message */}
           {error && (
             <div
-              className="p-4 rounded-lg border flex items-start gap-3"
+              className="p-3 md:p-4 rounded-lg border flex items-start gap-3"
               style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: '#ef4444' }}
             >
               <AlertCircle size={18} style={{ color: '#ef4444' }} className="flex-shrink-0 mt-0.5" />
-              <p className="text-sm whitespace-pre-wrap" style={{ color: '#fca5a5' }}>
+              <p className="text-xs md:text-sm whitespace-pre-wrap" style={{ color: '#fca5a5' }}>
                 {error}
               </p>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-3 md:space-y-4">
             {isSignUp && (
               <>
                 {/* Full Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-xs md:text-sm font-medium text-gray-300 mb-2">
                     Full Name (Optional)
                   </label>
                   <input
@@ -159,13 +159,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="John Doe"
-                    className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 border border-gray-700 focus:border-green-500 focus:outline-none transition"
+                    className="w-full bg-gray-800 text-white rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border border-gray-700 focus:border-green-500 focus:outline-none transition"
                   />
                 </div>
 
                 {/* Phone Number */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-xs md:text-sm font-medium text-gray-300 mb-2">
                     Phone Number (Optional)
                   </label>
                   <input
@@ -173,7 +173,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="+1 (555) 123-4567"
-                    className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 border border-gray-700 focus:border-green-500 focus:outline-none transition"
+                    className="w-full bg-gray-800 text-white rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border border-gray-700 focus:border-green-500 focus:outline-none transition"
                   />
                 </div>
               </>
@@ -181,10 +181,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+              <label className="block text-xs md:text-sm font-medium text-gray-300 mb-2">Email</label>
               <div className="relative">
                 <Mail
-                  size={18}
+                  size={16}
                   className="absolute left-3 top-1/2 transform -translate-y-1/2"
                   style={{ color: '#64748B' }}
                 />
@@ -194,17 +194,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
-                  className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 pl-10 border border-gray-700 focus:border-green-500 focus:outline-none transition"
+                  className="w-full bg-gray-800 text-white rounded-lg px-3 md:px-4 py-2 md:py-3 pl-9 md:pl-10 text-sm md:text-base border border-gray-700 focus:border-green-500 focus:outline-none transition"
                 />
               </div>
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+              <label className="block text-xs md:text-sm font-medium text-gray-300 mb-2">Password</label>
               <div className="relative">
                 <Lock
-                  size={18}
+                  size={16}
                   className="absolute left-3 top-1/2 transform -translate-y-1/2"
                   style={{ color: '#64748B' }}
                 />
@@ -214,14 +214,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 pl-10 pr-10 border border-gray-700 focus:border-green-500 focus:outline-none transition"
+                  className="w-full bg-gray-800 text-white rounded-lg px-3 md:px-4 py-2 md:py-3 pl-9 md:pl-10 pr-10 text-sm md:text-base border border-gray-700 focus:border-green-500 focus:outline-none transition"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
@@ -229,12 +229,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             {/* Confirm Password (Sign Up only) */}
             {isSignUp && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs md:text-sm font-medium text-gray-300 mb-2">
                   Confirm Password
                 </label>
                 <div className="relative">
                   <Lock
-                    size={18}
+                    size={16}
                     className="absolute left-3 top-1/2 transform -translate-y-1/2"
                     style={{ color: '#64748B' }}
                   />
@@ -244,7 +244,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 pl-10 pr-10 border border-gray-700 focus:border-green-500 focus:outline-none transition"
+                    className="w-full bg-gray-800 text-white rounded-lg px-3 md:px-4 py-2 md:py-3 pl-9 md:pl-10 pr-10 text-sm md:text-base border border-gray-700 focus:border-green-500 focus:outline-none transition"
                   />
                 </div>
               </div>
@@ -254,7 +254,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg py-3 font-semibold transition flex items-center justify-center gap-2"
+              className="w-full rounded-lg py-2 md:py-3 font-semibold transition flex items-center justify-center gap-2 text-sm md:text-base"
               style={{
                 background: loading ? '#22c55e99' : '#39FF14',
                 color: '#070B14',
@@ -262,7 +262,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 cursor: loading ? 'not-allowed' : 'pointer',
               }}
             >
-              {loading && <Loader size={18} className="animate-spin" />}
+              {loading && <Loader size={16} className="animate-spin" />}
               {isSignUp ? 'Create Account' : 'Sign In'}
             </button>
           </form>
@@ -272,7 +272,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             <div className="text-center">
               <button
                 onClick={onForgotPasswordClick}
-                className="text-sm hover:underline"
+                className="text-xs md:text-sm hover:underline"
                 style={{ color: '#00D4FF' }}
               >
                 Forgot your password?
@@ -282,7 +282,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
           {/* Toggle Sign Up / Sign In */}
           <div className="text-center">
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-400 text-xs md:text-sm">
               {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
               <button
                 onClick={() => {
@@ -303,9 +303,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         </div>
 
         {/* Features */}
-        <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+        <div className="mt-6 md:mt-8 grid grid-cols-3 gap-3 md:gap-4 text-center">
           <div>
-            <p className="text-2xl mb-2">🗺️</p>
+            <p className="text-xl md:text-2xl mb-2">🗺️</p>
             <p className="text-xs text-gray-400">Live GPS Tracking</p>
           </div>
           <div>
