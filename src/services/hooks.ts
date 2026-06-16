@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase, signIn, signUp, signOut, getCurrentUser } from './supabaseClient';
 import { deviceService, locationService, threatService, alertService, remoteCommandService } from './apiService';
 import twilioService from './twilioService';
-import authService from './authService';
+import { startForgotPasswordFlow, verifyOTP as verifyOTPService, resetPasswordWithOTP, verifyEmailWithToken, resendVerificationEmail, isEmailVerified, isProfileComplete, signUpWithProfile } from './authService';
 import userProfileService from './userProfileService';
 
 // ============================================================
@@ -22,11 +22,11 @@ export const useAuth = () => {
       
       if (currentUser) {
         // Check email verification status
-        const isVerified = await authService.isEmailVerified(currentUser.id);
+        const isVerified = await isEmailVerified(currentUser.id);
         setEmailVerified(isVerified);
 
         // Check profile completion
-        const profileStatus = await authService.isProfileComplete(currentUser.id);
+        const profileStatus = await isProfileComplete(currentUser.id);
         setProfileComplete(profileStatus.complete);
       }
 
@@ -39,7 +39,7 @@ export const useAuth = () => {
       (event, session) => {
         setUser(session?.user || null);
         if (session?.user) {
-          authService.isEmailVerified(session.user.id).then(setEmailVerified);
+          isEmailVerified(session.user.id).then(setEmailVerified);
         }
       }
     );
@@ -49,25 +49,25 @@ export const useAuth = () => {
 
   // Enhanced auth methods
   const forgotPassword = useCallback(async (email: string) => {
-    const result = await authService.startForgotPasswordFlow(email);
+    const result = await startForgotPasswordFlow(email);
     if (!result.success) setError(result.error);
     return result;
   }, []);
 
   const verifyOTP = useCallback(async (email: string, otp: string) => {
-    const result = await authService.verifyOTP(email, otp);
+    const result = await verifyOTPService(email, otp);
     if (!result.success) setError(result.error);
     return result;
   }, []);
 
   const resetPassword = useCallback(async (email: string, newPassword: string, otp: string) => {
-    const result = await authService.resetPasswordWithOTP(email, newPassword, otp);
+    const result = await resetPasswordWithOTP(email, newPassword, otp);
     if (!result.success) setError(result.error);
     return result;
   }, []);
 
   const verifyEmail = useCallback(async (token: string) => {
-    const result = await authService.verifyEmailWithToken(token);
+    const result = await verifyEmailWithToken(token);
     if (result.success) {
       setEmailVerified(true);
     } else {
@@ -77,14 +77,14 @@ export const useAuth = () => {
   }, []);
 
   const resendVerificationEmail = useCallback(async (email: string) => {
-    const result = await authService.resendVerificationEmail(email);
+    const result = await resendVerificationEmail(email);
     if (!result.success) setError(result.error);
     return result;
   }, []);
 
-  const signUpWithProfile = useCallback(
+  const signUpWithProfileCallback = useCallback(
     async (email: string, password: string, phoneNumber?: string, fullName?: string) => {
-      const result = await authService.signUpWithProfile(email, password, phoneNumber, fullName);
+      const result = await signUpWithProfile(email, password, phoneNumber, fullName);
       if (result.success && result.userId) {
         setUser(result.userId);
       } else {
@@ -102,7 +102,7 @@ export const useAuth = () => {
     emailVerified,
     profileComplete,
     signIn,
-    signUp: signUpWithProfile,
+    signUp: signUpWithProfileCallback,
     signOut,
     forgotPassword,
     verifyOTP,

@@ -2,7 +2,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 // Set Mapbox access token
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+const MAPBOX_TOKEN = (import.meta.env.VITE_MAPBOX_TOKEN || '') as string;
 
 if (!MAPBOX_TOKEN) {
   console.error('Mapbox token not found in environment variables');
@@ -163,7 +163,7 @@ export class MapboxService {
           coordinates: coordinates,
         },
         properties: {},
-      } as GeoJSONFeature);
+      } as unknown as GeoJSONFeature);
     }
   }
 

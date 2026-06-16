@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Loader, AlertCircle, CheckCircle } from 'lucide-react';
-import authService from '../../services/authService';
+import { verifyEmailWithToken, resendVerificationEmail } from '../../../services/authService';
 
 export interface EmailVerificationPageProps {
   email: string;
@@ -41,7 +41,7 @@ export const EmailVerificationPage: React.FC<EmailVerificationPageProps> = ({
     setError('');
 
     try {
-      const result = await authService.verifyEmailWithToken(token);
+      const result = await verifyEmailWithToken(token);
 
       if (!result.success) {
         setError(result.message || 'Email verification failed');
@@ -69,7 +69,7 @@ export const EmailVerificationPage: React.FC<EmailVerificationPageProps> = ({
     setCanResend(false);
 
     try {
-      const result = await authService.resendVerificationEmail(email);
+      const result = await resendVerificationEmail(email);
 
       if (!result.success) {
         setError(result.message || 'Failed to resend verification email');

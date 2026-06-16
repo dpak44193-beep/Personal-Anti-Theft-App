@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Loader, Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import authService from '../../services/authService';
+import { startForgotPasswordFlow, verifyOTP, resetPasswordWithOTP } from '../../../services/authService';
 
 export interface ForgotPasswordPageProps {
   onBackClick?: () => void;
@@ -54,7 +54,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
     setLoading(true);
 
     try {
-      const result = await authService.startForgotPasswordFlow(email);
+      const result = await startForgotPasswordFlow(email);
 
       if (!result.success) {
         setError(result.message || 'Failed to send OTP');
@@ -88,7 +88,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
     setLoading(true);
 
     try {
-      const result = await authService.verifyOTP(email, otp);
+      const result = await verifyOTP(email, otp);
 
       if (!result.success) {
         setError(result.message || 'Invalid OTP');
@@ -124,7 +124,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
     setLoading(true);
 
     try {
-      const result = await authService.resetPasswordWithOTP(email, newPassword, otp);
+      const result = await resetPasswordWithOTP(email, newPassword, otp);
 
       if (!result.success) {
         setError(result.message || 'Failed to reset password');

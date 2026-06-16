@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../services';
 import { AlertCircle, Loader, Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../../../services/hooks';
 
 export interface LoginPageProps {
   onLoginSuccess?: () => void;
@@ -13,7 +13,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   onSignUpClick,
   onForgotPasswordClick,
 }) => {
-  const { signIn } = useAuth();
+  const { signIn, signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -70,8 +70,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setLoading(true);
 
     try {
-      const { signUp: signUpWithProfile } = useAuth();
-      const result = await signUpWithProfile(email, password, phoneNumber, fullName);
+      const result = await signUp(email, password, phoneNumber, fullName);
 
       if (!result.success) {
         setError(result.message || 'Sign up failed');
