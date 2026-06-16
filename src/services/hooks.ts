@@ -2,17 +2,34 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase, signIn, signUp, signOut, getCurrentUser } from './supabaseClient';
 import { deviceService, locationService, threatService, alertService, remoteCommandService } from './apiService';
 import twilioService from './twilioService';
+import authService from './authService';
+import userProfileService from './userProfileService';
 
-// Auth hooks
+// ============================================================
+// ENHANCED AUTH HOOK - Includes password reset, OTP, email verification
+// ============================================================
 export const useAuth = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<any>(null);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [profileComplete, setProfileComplete] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
       const currentUser = await getCurrentUser();
       setUser(currentUser);
+      
+      if (currentUser) {
+        // Check email verification status
+        const isVerified = await authService.isEmailVerified(currentUser.id);
+        setEmailVerified(isVerified);
+
+        // Check profile completion
+        const profileStatus = await authService.isProfileComplete(currentUser.id);
+        setProfileComplete(profileStatus.complete);
+      }
+
       setLoading(false);
     };
 
@@ -21,13 +38,78 @@ export const useAuth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user || null);
+        if (session?.user) {
+          authService.isEmailVerified(session.user.id).then(setEmailVerified);
+        }
       }
     );
 
     return () => subscription?.unsubscribe();
   }, []);
 
-  return { user, loading, error, signIn, signUp, signOut };
+  // Enhanced auth methods
+  const forgotPassword = useCallback(async (email: string) => {
+    const result = await authService.startForgotPasswordFlow(email);
+    if (!result.success) setError(result.error);
+    return result;
+  }, []);
+
+  const verifyOTP = useCallback(async (email: string, otp: string) => {
+    const result = await authService.verifyOTP(email, otp);
+    if (!result.success) setError(result.error);
+    return result;
+  }, []);
+
+  const resetPassword = useCallback(async (email: string, newPassword: string, otp: string) => {
+    const result = await authService.resetPasswordWithOTP(email, newPassword, otp);
+    if (!result.success) setError(result.error);
+    return result;
+  }, []);
+
+  const verifyEmail = useCallback(async (token: string) => {
+    const result = await authService.verifyEmailWithToken(token);
+    if (result.success) {
+      setEmailVerified(true);
+    } else {
+      setError(result.error);
+    }
+    return result;
+  }, []);
+
+  const resendVerificationEmail = useCallback(async (email: string) => {
+    const result = await authService.resendVerificationEmail(email);
+    if (!result.success) setError(result.error);
+    return result;
+  }, []);
+
+  const signUpWithProfile = useCallback(
+    async (email: string, password: string, phoneNumber?: string, fullName?: string) => {
+      const result = await authService.signUpWithProfile(email, password, phoneNumber, fullName);
+      if (result.success && result.userId) {
+        setUser(result.userId);
+      } else {
+        setError(result.error);
+      }
+      return result;
+    },
+    []
+  );
+
+  return {
+    user,
+    loading,
+    error,
+    emailVerified,
+    profileComplete,
+    signIn,
+    signUp: signUpWithProfile,
+    signOut,
+    forgotPassword,
+    verifyOTP,
+    resetPassword,
+    verifyEmail,
+    resendVerificationEmail,
+  };
 };
 
 // Device hooks
@@ -217,4 +299,366 @@ export const useSMSNotification = () => {
   };
 
   return { sendEmergencyAlert, sendLocationUpdate };
+};
+
+// ============================================================
+// USER PROFILE HOOK - Manage user profile and preferences
+// ============================================================
+export const useUserProfile = (userId: string | undefined) => {
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
+
+  const fetchProfile = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const result = await userProfileService.getUserProfile(userId);
+    if (result.success) {
+      setProfile(result.data);
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
+  }, [userId]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  const updateProfile = useCallback(
+    async (updates: any) => {
+      if (!userId) return;
+      const result = await userProfileService.updateUserProfile(userId, updates);
+      if (result.success) {
+        setProfile(result.data);
+      } else {
+        setError(result.error);
+      }
+      return result;
+    },
+    [userId]
+  );
+
+  const completeProfile = useCallback(async () => {
+    if (!userId) return;
+    const result = await userProfileService.completeProfile(userId);
+    if (result.success) {
+      setProfile(result.data);
+    } else {
+      setError(result.error);
+    }
+    return result;
+  }, [userId]);
+
+  return {
+    profile,
+    loading,
+    error,
+    updateProfile,
+    completeProfile,
+    refetch: fetchProfile,
+  };
+};
+
+// ============================================================
+// DEVICE TRACKING HOOK - Multi-device management and lost device tracking
+// ============================================================
+export const useDeviceTracking = (userId: string | undefined) => {
+  const [devices, setDevices] = useState<any[]>([]);
+  const [lostDevices, setLostDevices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
+
+  const fetchDevices = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const result = await userProfileService.getUserDevices(userId);
+    if (result.success) {
+      setDevices(result.data);
+      
+      // Separate lost devices
+      const lost = result.data.filter((d: any) => d.is_lost);
+      setLostDevices(lost);
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
+  }, [userId]);
+
+  useEffect(() => {
+    fetchDevices();
+    // Poll for device updates every 30 seconds
+    const interval = setInterval(fetchDevices, 30000);
+    return () => clearInterval(interval);
+  }, [fetchDevices]);
+
+  const registerDevice = useCallback(
+    async (deviceInfo: any) => {
+      if (!userId) return;
+      const result = await userProfileService.registerDevice(userId, deviceInfo);
+      if (result.success) {
+        await fetchDevices();
+      } else {
+        setError(result.error);
+      }
+      return result;
+    },
+    [userId, fetchDevices]
+  );
+
+  const markDeviceLost = useCallback(
+    async (deviceId: string, lastKnownLocation?: any) => {
+      if (!userId) return;
+      const result = await userProfileService.markDeviceLost(
+        userId,
+        deviceId,
+        lastKnownLocation
+      );
+      if (result.success) {
+        await fetchDevices();
+      } else {
+        setError(result.error);
+      }
+      return result;
+    },
+    [userId, fetchDevices]
+  );
+
+  const markDeviceFound = useCallback(
+    async (deviceId: string) => {
+      if (!userId) return;
+      const result = await userProfileService.markDeviceFound(userId, deviceId);
+      if (result.success) {
+        await fetchDevices();
+      } else {
+        setError(result.error);
+      }
+      return result;
+    },
+    [userId, fetchDevices]
+  );
+
+  const updateDeviceStatus = useCallback(
+    async (deviceId: string, updates: any) => {
+      if (!userId) return;
+      const result = await userProfileService.updateDeviceStatus(userId, deviceId, updates);
+      if (result.success) {
+        setDevices(
+          devices.map((d) => (d.id === deviceId ? result.data : d))
+        );
+      } else {
+        setError(result.error);
+      }
+      return result;
+    },
+    [userId, devices]
+  );
+
+  return {
+    devices,
+    lostDevices,
+    loading,
+    error,
+    registerDevice,
+    markDeviceLost,
+    markDeviceFound,
+    updateDeviceStatus,
+    refetch: fetchDevices,
+  };
+};
+
+// ============================================================
+// PERMISSIONS HOOK - Handle app permissions (location, device access, etc)
+// ============================================================
+export const usePermissions = (userId: string | undefined, deviceId?: string) => {
+  const [permissions, setPermissions] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<any>(null);
+
+  const requestLocationPermission = useCallback(async () => {
+    if (!navigator.geolocation) {
+      setError(new Error('Geolocation not supported'));
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setPermissions((prev: any) => ({
+            ...prev,
+            location_access: true,
+          }));
+          resolve(true);
+        },
+        (err) => {
+          setError(err);
+          resolve(false);
+        }
+      );
+    });
+  }, []);
+
+  const requestCameraPermission = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach((track) => track.stop());
+      setPermissions((prev: any) => ({
+        ...prev,
+        photo_access: true,
+      }));
+      return true;
+    } catch (err) {
+      setError(err);
+      return false;
+    }
+  }, []);
+
+  const requestContactsPermission = useCallback(async () => {
+    // Note: Contacts API has limited browser support
+    // This is more relevant for mobile app
+    setPermissions((prev: any) => ({
+      ...prev,
+      contacts_access: true,
+    }));
+    return true;
+  }, []);
+
+  const grantDevicePermissions = useCallback(
+    async (permissionFlags: any) => {
+      if (!userId || !deviceId) return;
+
+      setLoading(true);
+      const result = await userProfileService.grantDevicePermissions(
+        userId,
+        deviceId,
+        permissionFlags
+      );
+
+      if (result.success) {
+        setPermissions(result.data);
+      } else {
+        setError(result.error);
+      }
+      setLoading(false);
+      return result;
+    },
+    [userId, deviceId]
+  );
+
+  const getDevicePermissions = useCallback(async () => {
+    if (!userId || !deviceId) return;
+
+    setLoading(true);
+    const result = await userProfileService.getDevicePermissions(userId, deviceId);
+    if (result.success) {
+      setPermissions(result.data);
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
+  }, [userId, deviceId]);
+
+  useEffect(() => {
+    getDevicePermissions();
+  }, [getDevicePermissions]);
+
+  return {
+    permissions,
+    loading,
+    error,
+    requestLocationPermission,
+    requestCameraPermission,
+    requestContactsPermission,
+    grantDevicePermissions,
+    refetch: getDevicePermissions,
+  };
+};
+
+// ============================================================
+// TRUSTED CONTACTS HOOK - Manage emergency contacts
+// ============================================================
+export const useTrustedContacts = (userId: string | undefined) => {
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<any>(null);
+
+  const fetchContacts = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const result = await userProfileService.getTrustedContacts(userId);
+    if (result.success) {
+      setContacts(result.data);
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
+  }, [userId]);
+
+  useEffect(() => {
+    fetchContacts();
+  }, [fetchContacts]);
+
+  const addContact = useCallback(
+    async (contactInfo: any) => {
+      if (!userId) return;
+      const result = await userProfileService.addTrustedContact(userId, contactInfo);
+      if (result.success) {
+        await fetchContacts();
+      } else {
+        setError(result.error);
+      }
+      return result;
+    },
+    [userId, fetchContacts]
+  );
+
+  const updateContact = useCallback(
+    async (contactId: string, updates: any) => {
+      if (!userId) return;
+      const result = await userProfileService.updateTrustedContact(userId, contactId, updates);
+      if (result.success) {
+        await fetchContacts();
+      } else {
+        setError(result.error);
+      }
+      return result;
+    },
+    [userId, fetchContacts]
+  );
+
+  const deleteContact = useCallback(
+    async (contactId: string) => {
+      if (!userId) return;
+      const result = await userProfileService.deleteTrustedContact(userId, contactId);
+      if (result.success) {
+        setContacts(contacts.filter((c) => c.id !== contactId));
+      } else {
+        setError(result.error);
+      }
+      return result;
+    },
+    [userId, contacts]
+  );
+
+  return {
+    contacts,
+    loading,
+    error,
+    addContact,
+    updateContact,
+    deleteContact,
+    refetch: fetchContacts,
+  };
 };

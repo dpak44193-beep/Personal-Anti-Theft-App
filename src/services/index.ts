@@ -4,3 +4,5 @@ export { deviceService, locationService, threatService, alertService, remoteComm
 export { twilioService } from './twilioService';
 export { mapboxService, MapboxService } from './mapboxService';
 export * from './hooks';
+export * from './authService';
+export * from './userProfileService';
