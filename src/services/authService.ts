@@ -485,6 +485,8 @@ export const signUpWithProfile = async (
   fullName?: string
 ) => {
   try {
+    console.log('🔄 Step 1: Creating auth user:', email);
+    
     // Sign up user in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -494,8 +496,18 @@ export const signUpWithProfile = async (
       },
     });
 
-    if (authError) throw authError;
-    if (!authData.user) throw new Error('User creation failed');
+    if (authError) {
+      console.error('❌ Auth signup failed:', authError.message);
+      throw authError;
+    }
+    
+    if (!authData.user) {
+      console.error('❌ Auth user not created');
+      throw new Error('User creation failed');
+    }
+    
+    console.log('✅ Step 1 Complete: Auth user created:', authData.user.id);
+    console.log('🔄 Step 2: Creating user profile...');
 
     // Create user profile
     const { error: profileError } = await supabase
@@ -514,30 +526,37 @@ export const signUpWithProfile = async (
 
     // Handle missing table error
     if (profileError?.code === '404' || profileError?.message?.includes('not found')) {
-      console.error('❌ user_profiles table not found');
-      console.log('📌 SOLUTION: Execute SUPABASE_SCHEMA.sql in Supabase SQL Editor');
-      console.log('📌 Guide: See EXECUTE_SCHEMA_GUIDE.md');
+      console.error('❌ Step 2 Failed: user_profiles table not found');
+      console.log('📌 Database schema not initialized yet');
+      console.log('📌 Execute SUPABASE_SCHEMA.sql in Supabase SQL Editor');
       
-      // Still return partial success - user was created in auth
       return {
         success: false,
-        message: 'Auth account created but profile table not yet initialized. Execute SUPABASE_SCHEMA.sql in Supabase dashboard first.',
+        message: 'Database tables not initialized. Execute SUPABASE_SCHEMA.sql first.',
         userId: authData.user.id,
         requiresSchemaSetup: true,
         error: profileError,
       };
     }
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('❌ Step 2 Failed: Profile creation error:', profileError.message);
+      throw profileError;
+    }
+    
+    console.log('✅ Step 2 Complete: User profile created');
+    console.log('🔄 Step 3: Sending verification email...');
 
     // Send verification email
     try {
       await sendEmailVerificationLink(email, authData.user.id);
-    } catch (emailError) {
-      console.warn('Warning: Could not send verification email (expected on free tier)', emailError);
+      console.log('✅ Step 3 Complete: Verification email sent');
+    } catch (emailError: any) {
+      console.warn('⚠️ Step 3 Warning: Email sending failed (expected on free tier):', emailError?.message);
       // Don't fail signup if email sending fails
     }
 
+    console.log('✅ Signup complete! User:', email);
     return {
       success: true,
       message: 'Signup successful! Please verify your email.',
@@ -546,12 +565,10 @@ export const signUpWithProfile = async (
       error: null,
     };
   } catch (error: any) {
+    console.error('❌ Signup exception:', error?.message);
+    
     // Handle table not found at auth creation stage
     if (error?.code === 'PGRST116' || error?.message?.includes('404')) {
-      console.error('❌ Database tables not found');
-      console.log('📌 SOLUTION: Execute SUPABASE_SCHEMA.sql in Supabase SQL Editor');
-      console.log('📌 Guide: See EXECUTE_SCHEMA_GUIDE.md');
-      
       return {
         success: false,
         message: 'Database not initialized. Execute SUPABASE_SCHEMA.sql in Supabase dashboard first.',
@@ -560,7 +577,6 @@ export const signUpWithProfile = async (
       };
     }
     
-    console.error('Signup error:', error);
     return {
       success: false,
       message: error.message || 'Signup failed',
